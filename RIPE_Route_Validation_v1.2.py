@@ -290,6 +290,8 @@ def main():
         with st.spinner('Fetching BGP data...'):
             fetch_and_analyze_bgp()
             st.session_state.update_time = current_time
+            # Only rerun after completing the 2-minute update
+            st.rerun()
     
     # Display time until next update
     time_to_next = 120 - time_since_last_update
@@ -297,11 +299,6 @@ def main():
         Next update in: {time_to_next} seconds  
         Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}
     """)
-    
-    # Add auto-rerun using Streamlit's native rerun mechanism
-    st.empty()
-    time.sleep(10)
-    st.rerun()
 
 if __name__ == "__main__":
     main()

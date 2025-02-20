@@ -270,36 +270,30 @@ def main():
     st.title("BGP Analysis Dashboard")
     
     # Initialize session state
+    if 'data_stores' not in st.session_state:
+        st.session_state.data_stores = {prefix: DataStorage() for prefix in PREFIXES}
     if 'update_time' not in st.session_state:
         st.session_state.update_time = datetime.now() - timedelta(minutes=2)
     
-    # Add auto-refresh functionality
-    auto_refresh = st.sidebar.checkbox('Enable Auto Refresh', value=True)
-    refresh_interval = st.sidebar.slider('Refresh Interval (seconds)', 
-                                       min_value=60, 
-                                       max_value=300, 
-                                       value=120)
+    # Use global data_stores
+    global data_stores
+    data_stores = st.session_state.data_stores
     
-    # Manual refresh button
-    if st.sidebar.button("Refresh Now"):
+    # Check if it's time to update (every 2 minutes)
+    current_time = datetime.now()
+    if (current_time - st.session_state.update_time).seconds >= 120:
         with st.spinner('Fetching BGP data...'):
             fetch_and_analyze_bgp()
-            st.session_state.update_time = datetime.now()
+            st.session_state.update_time = current_time
     
-    # Auto refresh logic
-    if auto_refresh:
-        time_since_update = (datetime.now() - st.session_state.update_time).seconds
-        if time_since_update >= refresh_interval:
-            with st.spinner('Auto-refreshing BGP data...'):
-                fetch_and_analyze_bgp()
-                st.session_state.update_time = datetime.now()
-        
-        # Show countdown
-        time_to_next_update = refresh_interval - time_since_update
-        st.sidebar.write(f"Next update in: {time_to_next_update} seconds")
-    
-    # Add last update time display
+    # Display time until next update
+    time_to_next = 120 - (current_time - st.session_state.update_time).seconds
+    st.sidebar.write(f"Next update in: {time_to_next} seconds")
     st.sidebar.write(f"Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Rerun the app every 10 seconds to check for updates
+    time.sleep(10)
+    st.experimental_rerun()
 
 if __name__ == "__main__":
     main()

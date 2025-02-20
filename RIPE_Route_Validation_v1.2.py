@@ -269,14 +269,37 @@ def main():
     st.set_page_config(page_title="BGP Analysis Dashboard", layout="wide")
     st.title("BGP Analysis Dashboard")
     
+    # Initialize session state
     if 'update_time' not in st.session_state:
         st.session_state.update_time = datetime.now() - timedelta(minutes=2)
     
-    # Add refresh button
-    if st.button("Refresh Data") or (datetime.now() - st.session_state.update_time).seconds >= 120:
+    # Add auto-refresh functionality
+    auto_refresh = st.sidebar.checkbox('Enable Auto Refresh', value=True)
+    refresh_interval = st.sidebar.slider('Refresh Interval (seconds)', 
+                                       min_value=60, 
+                                       max_value=300, 
+                                       value=120)
+    
+    # Manual refresh button
+    if st.sidebar.button("Refresh Now"):
         with st.spinner('Fetching BGP data...'):
             fetch_and_analyze_bgp()
             st.session_state.update_time = datetime.now()
+    
+    # Auto refresh logic
+    if auto_refresh:
+        time_since_update = (datetime.now() - st.session_state.update_time).seconds
+        if time_since_update >= refresh_interval:
+            with st.spinner('Auto-refreshing BGP data...'):
+                fetch_and_analyze_bgp()
+                st.session_state.update_time = datetime.now()
+        
+        # Show countdown
+        time_to_next_update = refresh_interval - time_since_update
+        st.sidebar.write(f"Next update in: {time_to_next_update} seconds")
+    
+    # Add last update time display
+    st.sidebar.write(f"Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
     main()

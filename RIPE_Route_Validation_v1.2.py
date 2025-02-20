@@ -130,9 +130,6 @@ def analyze_bgp_data(data, prefix):
 
 def update_plots(all_stats, timestamp):
     """Update plots for Streamlit"""
-    if not all_stats:
-        return
-        
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 10))
     
     # Reduced spacing parameters
@@ -275,42 +272,36 @@ def main():
     # Initialize session state
     if 'data_stores' not in st.session_state:
         st.session_state.data_stores = {prefix: DataStorage() for prefix in PREFIXES}
+    if 'update_time' not in st.session_state:
         st.session_state.update_time = datetime.now() - timedelta(minutes=2)
-        st.session_state.all_stats = {}
     
     # Use global data_stores
     global data_stores
     data_stores = st.session_state.data_stores
     
-    # Status indicators in sidebar
-    st.sidebar.write("### Status")
+    # Create a placeholder for the update time display
+    time_placeholder = st.sidebar.empty()
+    
+    # Check if it's time to update (every 2 minutes)
     current_time = datetime.now()
     time_since_last_update = (current_time - st.session_state.update_time).seconds
-    time_to_next = 120 - time_since_last_update
     
-    status_text = st.sidebar.empty()
-    status_text.write(f"""
+    if time_since_last_update >= 120:
+        with st.spinner('Fetching BGP data...'):
+            fetch_and_analyze_bgp()
+            st.session_state.update_time = current_time
+    
+    # Display time until next update
+    time_to_next = 120 - time_since_last_update
+    time_placeholder.write(f"""
         Next update in: {time_to_next} seconds  
         Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}
     """)
     
-    # Check for update
-    if time_since_last_update >= 120:
-        with st.spinner('Fetching BGP data...'):
-            st.session_state.all_stats = fetch_and_analyze_bgp()
-            st.session_state.update_time = current_time
-            st.experimental_rerun()
-    
-    # Ensure we have data to display
-    if not st.session_state.all_stats:
-        with st.spinner('Initial data fetch...'):
-            st.session_state.all_stats = fetch_and_analyze_bgp()
-            st.session_state.update_time = current_time
-    
-    # Always update plots with current data
-    sgt_time = get_sgt_time()
-    timestamp = sgt_time.strftime('%H:%M')
-    update_plots(st.session_state.all_stats, timestamp)
+    # Add auto-rerun using Streamlit's native rerun mechanism
+    st.empty()
+    time.sleep(10)
+    st.rerun()
 
 if __name__ == "__main__":
     main()

@@ -279,21 +279,29 @@ def main():
     global data_stores
     data_stores = st.session_state.data_stores
     
+    # Create a placeholder for the update time display
+    time_placeholder = st.sidebar.empty()
+    
     # Check if it's time to update (every 2 minutes)
     current_time = datetime.now()
-    if (current_time - st.session_state.update_time).seconds >= 120:
+    time_since_last_update = (current_time - st.session_state.update_time).seconds
+    
+    if time_since_last_update >= 120:
         with st.spinner('Fetching BGP data...'):
             fetch_and_analyze_bgp()
             st.session_state.update_time = current_time
     
     # Display time until next update
-    time_to_next = 120 - (current_time - st.session_state.update_time).seconds
-    st.sidebar.write(f"Next update in: {time_to_next} seconds")
-    st.sidebar.write(f"Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    time_to_next = 120 - time_since_last_update
+    time_placeholder.write(f"""
+        Next update in: {time_to_next} seconds  
+        Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}
+    """)
     
-    # Rerun the app every 10 seconds to check for updates
+    # Add auto-rerun using Streamlit's native rerun mechanism
+    st.empty()
     time.sleep(10)
-    st.experimental_rerun()
+    st.rerun()
 
 if __name__ == "__main__":
     main()

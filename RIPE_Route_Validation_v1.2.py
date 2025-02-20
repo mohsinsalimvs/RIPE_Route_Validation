@@ -274,12 +274,16 @@ def main():
         st.session_state.data_stores = {prefix: DataStorage() for prefix in PREFIXES}
     if 'update_time' not in st.session_state:
         st.session_state.update_time = datetime.now() - timedelta(minutes=2)
+        # Force initial data fetch
+        with st.spinner('Initial data fetch...'):
+            fetch_and_analyze_bgp()
     
     # Use global data_stores
     global data_stores
     data_stores = st.session_state.data_stores
     
-    # Create a placeholder for the update time display
+    # Create placeholder for graphs and timer
+    graph_placeholder = st.empty()
     time_placeholder = st.sidebar.empty()
     
     # Check if it's time to update (every 2 minutes)
@@ -290,8 +294,6 @@ def main():
         with st.spinner('Fetching BGP data...'):
             fetch_and_analyze_bgp()
             st.session_state.update_time = current_time
-            # Only rerun after completing the 2-minute update
-            st.rerun()
     
     # Display time until next update
     time_to_next = 120 - time_since_last_update
@@ -299,6 +301,12 @@ def main():
         Next update in: {time_to_next} seconds  
         Last updated: {st.session_state.update_time.strftime('%Y-%m-%d %H:%M:%S')}
     """)
+    
+    # Ensure data is displayed even if no update is needed
+    all_stats = {}
+    sgt_time = get_sgt_time()
+    timestamp = sgt_time.strftime('%H:%M')
+    update_plots(all_stats, timestamp)
 
 if __name__ == "__main__":
     main()

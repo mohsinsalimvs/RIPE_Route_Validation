@@ -300,7 +300,7 @@ def main():
     
     # Add auto-rerun using Streamlit's native rerun mechanism
     st.empty()
-    time.sleep(10)
+    time.sleep(60)
     st.rerun()
 
 if __name__ == "__main__":
